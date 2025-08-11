@@ -1,7 +1,11 @@
 #include "AIPlayer.h"
+#include "Board.h"
 #include "Piece.h"
-#include <limits>
-#include <algorithm>
+#include <limits> // For std::numeric_limits
+#include <vector> // For std::vector
+#include <algorithm> // For std::max, std::min
+#include <map> // For std::map
+
 
 const std::array<int, 64> AIPlayer::pawn_pst = {
     0,  0,  0,  0,  0,  0,  0,  0,
@@ -66,26 +70,172 @@ const std::array<int, 64> AIPlayer::king_pst_mid = {
 
 int AIPlayer::evaluate(const Board& board) {
     int score = 0;
-    for (int r = 0; r < 8; ++r) {
-        for (int f = 0; f < 8; ++f) {
-            const Piece* p = board.getPieceAt({r, f});
-            if (p) {
-                int pieceValue = 0;
-                int pstValue = 0;
-                int pos_idx = p->getColor() == Color::WHITE ? (r * 8 + f) : ((7 - r) * 8 + f);
 
-                switch (p->getType()) {
-                    case PieceType::PAWN:   pieceValue = 100; pstValue = pawn_pst[pos_idx]; break;
-                    case PieceType::KNIGHT: pieceValue = 320; pstValue = knight_pst[pos_idx]; break;
-                    case PieceType::BISHOP: pieceValue = 330; pstValue = bishop_pst[pos_idx]; break;
-                    case PieceType::ROOK:   pieceValue = 500; pstValue = rook_pst[pos_idx]; break;
-                    case PieceType::QUEEN:  pieceValue = 900; pstValue = queen_pst[pos_idx]; break;
-                    case PieceType::KING:   pieceValue = 20000; pstValue = king_pst_mid[pos_idx]; break;
-                }
-                score += (p->getColor() == Color::WHITE) ? (pieceValue + pstValue) : -(pieceValue + pstValue);
+    // Piece values map
+    std::map<PieceType, int> pieceValues = {
+        {PieceType::PAWN, 100},
+        {PieceType::KNIGHT, 300},
+        {PieceType::BISHOP, 300},
+        {PieceType::ROOK, 500},
+        {PieceType::QUEEN, 900},
+        {PieceType::KING, 0} // King value is handled by king safety
+    };
+
+    // 1. Material Evaluation
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            Square currentSquare = {i, j};
+            const Piece* piece = board.getPieceAt(currentSquare);
+            if (piece) {
+                score += pieceValues[piece->getType()] * ((piece->getColor() == Color::WHITE) ? 1 : -1);
             }
         }
     }
+
+    // Define evaluation constants
+    const int MOBILITY_PAWN = 1;
+    const int MOBILITY_KNIGHT = 3;
+    const int MOBILITY_BISHOP = 3;
+    const int MOBILITY_ROOK = 2;
+    const int MOBILITY_QUEEN = 1;
+    const int MOBILITY_KING = 1;
+
+    const int KING_CASTLED_BONUS = 50;
+    const int KING_PAWN_SHIELD_BONUS = 10;
+
+    const int PAWN_ISOLATED_PENALTY = -20;
+    const int PAWN_DOUBLED_PENALTY = -10;
+    const int PAWN_PASSED_BONUS_BASE = 30;
+    const int PAWN_PASSED_BONUS_RANK = 10;
+
+    const int CENTER_CONTROL_BONUS = 10;
+
+    // Iterate through all pieces for advanced evaluations
+    for (int x = 0; x < 8; ++x) {
+        for (int y = 0; y < 8; ++y) {
+            Square currentSquare = {x, y};
+            const Piece* piece = board.getPieceAt(currentSquare);
+            if (!piece) continue;
+
+            Color pieceColor = piece->getColor();
+            int pieceValueMultiplier = (pieceColor == Color::WHITE) ? 1 : -1;
+
+            // 2. Piece Mobility Evaluation
+            std::vector<Move> legalMoves = piece->getPossibleMoves(board);
+            int mobilityScore = 0;
+            switch (piece->getType()) {
+                case PieceType::PAWN: mobilityScore = legalMoves.size() * MOBILITY_PAWN; break;
+                case PieceType::KNIGHT: mobilityScore = legalMoves.size() * MOBILITY_KNIGHT; break;
+                case PieceType::BISHOP: mobilityScore = legalMoves.size() * MOBILITY_BISHOP; break;
+                case PieceType::ROOK: mobilityScore = legalMoves.size() * MOBILITY_ROOK; break;
+                case PieceType::QUEEN: mobilityScore = legalMoves.size() * MOBILITY_QUEEN; break;
+                case PieceType::KING: mobilityScore = legalMoves.size() * MOBILITY_KING; break;
+                default: break;
+            }
+            score += mobilityScore * pieceValueMultiplier;
+
+            // 3. King Safety Evaluation
+            if (piece->getType() == PieceType::KING) {
+                // Castling bonus (simplified check: if king is on castled square)
+                // This is a heuristic and might not be perfectly accurate without knowing game history
+                if (pieceColor == Color::WHITE) {
+                    if (piece->getPosition().file == 6 && piece->getPosition().rank == 0) { // White King side castled
+                        score += KING_CASTLED_BONUS * pieceValueMultiplier;
+                    } else if (piece->getPosition().file == 2 && piece->getPosition().rank == 0) { // White Queen side castled
+                        score += KING_CASTLED_BONUS * pieceValueMultiplier;
+                    }
+                } else { // Black King
+                    if (piece->getPosition().file == 6 && piece->getPosition().rank == 7) { // Black King side castled
+                        score += KING_CASTLED_BONUS * pieceValueMultiplier;
+                    } else if (piece->getPosition().file == 2 && piece->getPosition().rank == 7) { // Black Queen side castled
+                        score += KING_CASTLED_BONUS * pieceValueMultiplier;
+                    }
+                }
+
+                // Pawn shield (simplified: check pawns in front of king)
+                // For white king at (x, y), check (x-1, y+1), (x, y+1), (x+1, y+1)
+                // For black king at (x, y), check (x-1, y-1), (x, y-1), (x+1, y-1)
+                int pawnShieldRank = (pieceColor == Color::WHITE) ? y + 1 : y - 1;
+                for (int fileOffset = -1; fileOffset <= 1; ++fileOffset) {
+                    int pawnShieldFile = x + fileOffset;
+                    Square shieldSquare = {pawnShieldFile, pawnShieldRank};
+                    if (shieldSquare.isValid()) {
+                        const Piece* shieldPiece = board.getPieceAt(shieldSquare);
+                        if (shieldPiece && shieldPiece->getType() == PieceType::PAWN && shieldPiece->getColor() == pieceColor) {
+                            score += KING_PAWN_SHIELD_BONUS * pieceValueMultiplier;
+                        }
+                    }
+                }
+            }
+
+            // 4. Pawn Structure Evaluation
+            if (piece->getType() == PieceType::PAWN) {
+                // Isolated Pawn: No friendly pawns on adjacent files
+                bool isIsolated = true;
+                for (int fileOffset = -1; fileOffset <= 1; ++fileOffset) {
+                    if (fileOffset == 0) continue; // Skip current file
+                    for (int rank = 0; rank < 8; ++rank) {
+                        Square adjacentSquare = {x + fileOffset, rank};
+                        if (adjacentSquare.isValid()) {
+                            const Piece* adjacentPawn = board.getPieceAt(adjacentSquare);
+                            if (adjacentPawn && adjacentPawn->getType() == PieceType::PAWN && adjacentPawn->getColor() == pieceColor) {
+                                isIsolated = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isIsolated) break;
+                }
+                if (isIsolated) {
+                    score += PAWN_ISOLATED_PENALTY * pieceValueMultiplier;
+                }
+
+                // Doubled Pawn: Another friendly pawn on the same file
+                bool isDoubled = false;
+                for (int rank = 0; rank < 8; ++rank) {
+                    if (rank == y) continue; // Skip current rank
+                    Square sameFileSquare = {x, rank};
+                    const Piece* sameFilePawn = board.getPieceAt(sameFileSquare);
+                    if (sameFilePawn && sameFilePawn->getType() == PieceType::PAWN && sameFilePawn->getColor() == pieceColor) {
+                        isDoubled = true;
+                        break;
+                    }
+                }
+                if (isDoubled) {
+                    score += PAWN_DOUBLED_PENALTY * pieceValueMultiplier;
+                }
+
+                // Passed Pawn: No opposing pawns on the same or adjacent files in front of it
+                bool isPassed = true;
+                int direction = (pieceColor == Color::WHITE) ? 1 : -1;
+                for (int rank = y + direction; (pieceColor == Color::WHITE) ? (rank < 8) : (rank >= 0); rank += direction) {
+                    for (int fileOffset = -1; fileOffset <= 1; ++fileOffset) {
+                        int checkFile = x + fileOffset;
+                        Square blockingSquare = {checkFile, rank};
+                        if (blockingSquare.isValid()) {
+                            const Piece* blockingPawn = board.getPieceAt(blockingSquare);
+                            if (blockingPawn && blockingPawn->getType() == PieceType::PAWN && blockingPawn->getColor() != pieceColor) {
+                                isPassed = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isPassed) break;
+                }
+                if (isPassed) {
+                    int rankAdvanced = (pieceColor == Color::WHITE) ? (y - 1) : (6 - y); // Distance from starting rank (rank 1 for white, rank 6 for black)
+                    score += (PAWN_PASSED_BONUS_BASE + rankAdvanced * PAWN_PASSED_BONUS_RANK) * pieceValueMultiplier;
+                }
+            }
+
+            // 5. Center Control Evaluation
+            // Center squares: (3,3) d5, (4,3) e5, (3,4) d4, (4,4) e4
+            if ((x == 3 && y == 3) || (x == 4 && y == 3) || (x == 3 && y == 4) || (x == 4 && y == 4)) {
+                score += CENTER_CONTROL_BONUS * pieceValueMultiplier;
+            }
+        }
+    }
+
     return score;
 }
 

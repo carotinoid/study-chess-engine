@@ -78,6 +78,11 @@ int main() {
         if (input == "b" || input == "B") {
             playerColor = Color::BLACK;
         }
+        // Add difficulty setting here
+        std::wcout << L"AI 난이도를 설정하세요 (1-5, 높을수록 강함): ";
+        std::cin >> ai_difficulty;
+        if (ai_difficulty < 1) ai_difficulty = 1;
+        if (ai_difficulty > 5) ai_difficulty = 5;
     }
 
     while (game.getStatus() == GameStatus::ONGOING) {
