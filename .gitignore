@@ -1,0 +1,7 @@
+# Build artifacts
+build/
+*.o
+chessai
+
+# Submodule directory
+eco.json
