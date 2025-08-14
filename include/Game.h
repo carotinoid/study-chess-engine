@@ -2,7 +2,7 @@
 #define GAME_H
 
 #include <vector>
-#include "Board.h"
+#include "Bitboard.h"
 
 enum class GameStatus { ONGOING, CHECKMATE, STALEMATE, DRAW };
 
@@ -10,8 +10,8 @@ class Game {
 public:
     Game();
 
-    Board& getBoard();
-    const Board& getBoard() const;
+    BitboardRepresentation& getBoard();
+    const BitboardRepresentation& getBoard() const;
     GameStatus getStatus() const;
 
     std::vector<Move> getLegalMovesForPieceAt(Square s);
@@ -20,7 +20,7 @@ public:
 
 private:
     void updateStatus();
-    Board board;
+    BitboardRepresentation board;
     GameStatus status;
     std::vector<Move> moveHistory;
 };

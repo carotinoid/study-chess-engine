@@ -5,3 +5,6 @@ chessai
 
 # Submodule directory
 eco.json
+
+.env
+tmp

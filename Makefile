@@ -15,7 +15,7 @@ BUILD_DIR = build
 INCLUDE_DIR = include
 
 # Find all .cpp files in the source directory
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/Game.cpp $(SRC_DIR)/AIPlayer.cpp $(SRC_DIR)/Bitboard.cpp $(SRC_DIR)/MoveGen.cpp $(SRC_DIR)/MagicBitboards.cpp
 
 # Create a list of object files in the build directory
 OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
