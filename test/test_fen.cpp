@@ -3,7 +3,7 @@
 #include <iostream>
 
 void run_fen_tests() {
-    std::cout << "\n--- Running FEN Parsing Tests ---" << std::endl;
+    std::cout << "\n--- Running FEN Parsing Tests... ---" << std::endl;
 
     // Test Case 1: Kiwipete FEN
     std::string fen1 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -39,7 +39,7 @@ void run_fen_tests() {
     ASSERT_EQ(state2.enPassantTarget->file, 2); // c6 file is 2 (0-indexed)
     ASSERT_EQ(state2.fullmoveNumber, 2);
 
-    std::cout << "FEN Parsing Tests Passed!" << std::endl;
+    std::cout << "--- FEN Parsing Tests Passed! ---" << std::endl;
 }
 
 

@@ -40,6 +40,7 @@ public:
     void name(); \
     void run_##name() { \
         try { \
+            std::cout << "\n  " << "[RUNNING] " << #name << std::endl; \
             name(); \
             std::cout << "  " << "[PASSED] " << #name << std::endl; \
         } catch (const AssertException& e) { \

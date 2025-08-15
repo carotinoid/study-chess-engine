@@ -42,10 +42,8 @@ $(document).ready(function() {
 
     function updateStatus() {
         var status = '';
-
         var moveColor = (game.turn() === 'w') ? 'White' : 'Black';
 
-        // checkmate?
         if (game.in_checkmate()) {
             status = 'Game over, ' + moveColor + ' is in checkmate.';
         } else if (game.in_draw()) {
@@ -59,6 +57,29 @@ $(document).ready(function() {
 
         $status.html(status);
         $fen.html(game.fen());
+        updatePgnDisplay();
+    }
+
+    function updatePgnDisplay() {
+        var pgn = game.pgn({ max_width: 5, newline_char: '<br>' });
+        var $pgnContainer = $('#pgn-moves');
+        
+        // Format PGN for display
+        var history = game.history({ verbose: true });
+        var moveText = "";
+        var moveNumber = 1;
+        for (var i = 0; i < history.length; i += 2) {
+            moveText += moveNumber + '. ' + history[i].san;
+            if (history[i+1]) {
+                moveText += ' ' + history[i+1].san;
+            }
+            moveText += '<br>';
+            moveNumber++;
+        }
+        
+        $pgnContainer.html(moveText);
+        // Auto-scroll to the bottom
+        $pgnContainer.scrollTop($pgnContainer[0].scrollHeight);
     }
 
     function getEngineMove() {
@@ -75,12 +96,23 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify({ fen: game.fen(), depth: depth }),
             success: function(response) {
+                console.log("Received response from server:", response);
                 if (response.best_move) {
-                    // The server now returns a move object like { from: 'e2', to: 'e4' }
-                    game.move(response.best_move);
+                    console.log("Engine's move:", response.best_move);
+                    var moveResult = game.move(response.best_move);
+                    
+                    console.log("Result of game.move():", moveResult);
+                    if (moveResult === null) {
+                        console.error("Invalid move received from engine:", response.best_move);
+                        alert("The engine proposed an invalid move. Please check the console.");
+                        $('#engine-status').html('Error: Invalid move from engine.');
+                        return;
+                    }
+
                     board.position(game.fen());
                     updateStatus();
                     $('#engine-status').html('Ready');
+                    console.log("Board updated successfully.");
                 } else {
                     $('#engine-status').html('Error: No valid move received.');
                     alert("Error: Engine did not return a valid move.");
@@ -144,4 +176,17 @@ $(document).ready(function() {
     $('#newGameBtn').on('click', newGame);
     $('input[name="playerColor"]').on('change', newGame); // Start a new game when color changes
     $('#loadFenBtn').on('click', loadFen);
+
+    $('#copyPgnBtn').on('click', function() {
+        var pgn = game.pgn();
+        navigator.clipboard.writeText(pgn).then(function() {
+            var originalText = $('#copyPgnBtn').text();
+            $('#copyPgnBtn').text('Copied!');
+            setTimeout(function() {
+                $('#copyPgnBtn').text(originalText);
+            }, 2000); // Revert back after 2 seconds
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    });
 });

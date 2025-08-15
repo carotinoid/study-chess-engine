@@ -13,8 +13,8 @@ int main() {
 
     try {
         run_fen_tests();
-        run_move_tests();
         run_board_tests();
+        run_move_tests();
     } catch (const AssertException& e) {
         std::cerr << "\nA test case failed. Aborting." << std::endl;
         return 1;

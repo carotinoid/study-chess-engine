@@ -7,29 +7,36 @@
 </head>
 <body>
     <h1>C++ Chess Engine</h1>
-    <div id="board" style="width: 400px"></div>
-    <div class="info">
-        <p>Status: <span id="status"></span></p>
-        <p>FEN: <span id="fen"></span></p>
-        <p>Engine Status: <span id="engine-status">Ready</span></p>
-        <button id="newGameBtn">New Game</button>
-        <div id="controls">
-            <div id="color-selection">
-                <span>Play as:</span>
-                <input type="radio" id="white" name="playerColor" value="w" checked>
-                <label for="white">White</label>
-                <input type="radio" id="black" name="playerColor" value="b">
-                <label for="black">Black</label>
-            </div>
-            <div id="depth-selection">
-                <label for="depth">Search Depth:</label>
-                <input type="number" id="depth" name="depth" min="1" max="10" value="5">
-            </div>
+    <div class="main-container">
+        <div id="board" style="width: 400px"></div>
+        <div class="info">
+            <p>Status: <span id="status"></span></p>
+            <p>FEN: <span id="fen"></span></p>
+            <p>Engine Status: <span id="engine-status">Ready</span></p>
             <div>Timeout: 60s</div>
-        </div>
-        <div>
-            <input type="text" id="fenInput" placeholder="Enter FEN string" />
-            <button id="loadFenBtn">Load FEN</button>
+            <div class="pgn-container">
+                <label>PGN:</label>
+                <button id="copyPgnBtn">Copy</button>
+                <div id="pgn-moves"></div>
+            </div>
+            <button id="newGameBtn">New Game</button>
+            <div id="controls">
+                <div id="color-selection">
+                    <span>Play as:</span>
+                    <input type="radio" id="white" name="playerColor" value="w" checked>
+                    <label for="white">White</label>
+                    <input type="radio" id="black" name="playerColor" value="b">
+                    <label for="black">Black</label>
+                </div>
+                <div id="depth-selection">
+                    <label for="depth">Search Depth:</label>
+                    <input type="number" id="depth" name="depth" min="1" max="10" value="5">
+                </div>
+            </div>
+            <div>
+                <input type="text" id="fenInput" placeholder="Enter FEN string" />
+                <button id="loadFenBtn">Load FEN</button>
+            </div>
         </div>
     </div>
 

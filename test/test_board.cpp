@@ -9,10 +9,10 @@ void run_test_make_move();
 void run_test_render_board();
 
 void run_board_tests() {
-    std::cout << "Running Board tests..." << std::endl;
+    std::cout << "\n--- Running Board tests... ---" << std::endl;
     run_test_make_move();
     run_test_render_board();
-    std::cout << "Board tests passed!" << std::endl;
+    std::cout << "--- Board tests passed! ---" << std::endl;
 }
 
 TEST_CASE(test_make_move) {
@@ -33,12 +33,12 @@ TEST_CASE(test_make_move) {
 
 TEST_CASE(test_render_board) {
     Game game;
-    std::cout << "\n--- Rendering Initial Board --- " << std::endl;
+    std::cout << "\n# Rendering Initial Board" << std::endl;
     Debug::renderBoard(game);
 
     // Make a move and render again
     Move m = {Square{1, 4}, Square{3, 4}}; // e2e4
     game.makeMove(m);
-    std::cout << "--- Rendering Board after e2e4 --- " << std::endl;
+    std::cout << "# Rendering Board after e2e4" << std::endl;
     Debug::renderBoard(game);
 }
