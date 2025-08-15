@@ -9,14 +9,15 @@ enum class GameStatus { ONGOING, CHECKMATE, STALEMATE, DRAW };
 class Game {
 public:
     Game();
+    Game(const std::string& fen);
 
     BitboardRepresentation& getBoard();
     const BitboardRepresentation& getBoard() const;
     GameStatus getStatus() const;
 
-    std::vector<Move> getLegalMovesForPieceAt(Square s);
+    std::vector<Move> getLegalMovesForPieceAt(Square s) const;
     bool makeMove(const Move& move);
-    std::vector<Move> generateAllLegalMoves();
+    std::vector<Move> generateAllLegalMoves() const;
 
 private:
     void updateStatus();

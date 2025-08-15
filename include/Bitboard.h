@@ -28,12 +28,14 @@ struct BoardState {
     Color currentTurn;
     int halfmoveClock;
     int fullmoveNumber;
+    uint64_t zobristKey; // Zobrist hash of the current position
 };
 
 class BitboardRepresentation {
 public:
     BitboardRepresentation();
     void setupInitialPosition();
+    void setupPositionFromFen(const std::string& fen);
 
     const BoardState& getState() const;
 

@@ -1,7 +1,10 @@
 #include "../include/Bitboard.h"
 #include "../include/MoveGen.h"
 #include "../include/MagicBitboards.h"
+#include "../include/Zobrist.h"
 #include <iostream>
+#include <sstream>
+#include <cctype>
 
 namespace {
     // Constants for file masks, to prevent wrap-around when generating moves
@@ -50,6 +53,82 @@ void BitboardRepresentation::setupInitialPosition() {
     currentState.enPassantTarget = std::nullopt;
     currentState.halfmoveClock = 0;
     currentState.fullmoveNumber = 1;
+
+    currentState.zobristKey = Zobrist::ComputeHash(currentState);
+}
+
+void BitboardRepresentation::setupPositionFromFen(const std::string& fen) {
+    // Clear the board first
+    for (int i = 0; i < 2; ++i) {
+        currentState.pawn[i] = 0;
+        currentState.knight[i] = 0;
+        currentState.bishop[i] = 0;
+        currentState.rook[i] = 0;
+        currentState.queen[i] = 0;
+        currentState.king[i] = 0;
+    }
+    currentState.enPassantTarget = std::nullopt;
+    currentState.castleRights = {false, false, false, false};
+    currentState.halfmoveClock = 0;
+    currentState.fullmoveNumber = 1;
+
+    std::istringstream iss(fen);
+    std::string board_part;
+    iss >> board_part;
+
+    int rank = 7, file = 0;
+    for (char c : board_part) {
+        if (c == '/') {
+            rank--;
+            file = 0;
+        } else if (isdigit(c)) {
+            file += c - '0';
+        } else {
+            Color color = isupper(c) ? Color::WHITE : Color::BLACK;
+            int color_idx = (color == Color::WHITE) ? 0 : 1;
+            Bitboard bb = 1ULL << (rank * 8 + file);
+            switch (tolower(c)) {
+                case 'p': currentState.pawn[color_idx] |= bb; break;
+                case 'n': currentState.knight[color_idx] |= bb; break;
+                case 'b': currentState.bishop[color_idx] |= bb; break;
+                case 'r': currentState.rook[color_idx] |= bb; break;
+                case 'q': currentState.queen[color_idx] |= bb; break;
+                case 'k': currentState.king[color_idx] |= bb; break;
+            }
+            file++;
+        }
+    }
+
+    std::string turn_part;
+    iss >> turn_part;
+    currentState.currentTurn = (turn_part == "w") ? Color::WHITE : Color::BLACK;
+
+    std::string castling_part;
+    iss >> castling_part;
+    if (castling_part != "-") {
+        for (char c : castling_part) {
+            switch (c) {
+                case 'K': currentState.castleRights.whiteKingSide = true; break;
+                case 'Q': currentState.castleRights.whiteQueenSide = true; break;
+                case 'k': currentState.castleRights.blackKingSide = true; break;
+                case 'q': currentState.castleRights.blackQueenSide = true; break;
+            }
+        }
+    }
+
+    std::string enpassant_part;
+    iss >> enpassant_part;
+    if (enpassant_part != "-") {
+        int ep_file = enpassant_part[0] - 'a';
+        int ep_rank = enpassant_part[1] - '1';
+        currentState.enPassantTarget = Square{ep_rank, ep_file};
+    }
+
+    iss >> currentState.halfmoveClock;
+    iss >> currentState.fullmoveNumber;
+
+    updateCompositeBitboards();
+    currentState.zobristKey = Zobrist::ComputeHash(currentState);
 }
 
 const BoardState& BitboardRepresentation::getState() const {
@@ -72,13 +151,27 @@ bool BitboardRepresentation::isKingInCheck(Color kingColor) const {
 }
 
 void BitboardRepresentation::makeMove(const Move& move) {
-    int us_idx = (currentState.currentTurn == Color::WHITE) ? 0 : 1;
-    int them_idx = 1 - us_idx;
+    // --- Store old state for Zobrist update ---
+    const int us_idx = (currentState.currentTurn == Color::WHITE) ? 0 : 1;
+    const int them_idx = 1 - us_idx;
+    const int oldCastleRights = (currentState.castleRights.whiteKingSide << 3) |
+                              (currentState.castleRights.whiteQueenSide << 2) |
+                              (currentState.castleRights.blackKingSide << 1) |
+                              (currentState.castleRights.blackQueenSide);
+    const std::optional<Square> oldEnPassantTarget = currentState.enPassantTarget;
+    uint64_t hash = currentState.zobristKey;
+
+    // --- Zobrist Update Part 1: Remove old state ---
+    hash ^= Zobrist::blackToMoveKey; // Always switch side to move
+    hash ^= Zobrist::castleKeys[oldCastleRights];
+    if (oldEnPassantTarget) {
+        hash ^= Zobrist::enPassantKeys[oldEnPassantTarget->file];
+    }
+
+    // --- Find Moving Piece ---
     Bitboard from_bb = BitboardUtils::squareToBitboard(move.start);
     Bitboard to_bb = BitboardUtils::squareToBitboard(move.end);
     Bitboard from_to_bb = from_bb | to_bb;
-
-    // Find which piece is moving
     PieceType moving_piece_type = PieceType::PAWN; // Default
     if (from_bb & currentState.pawn[us_idx]) moving_piece_type = PieceType::PAWN;
     else if (from_bb & currentState.knight[us_idx]) moving_piece_type = PieceType::KNIGHT;
@@ -87,108 +180,121 @@ void BitboardRepresentation::makeMove(const Move& move) {
     else if (from_bb & currentState.queen[us_idx]) moving_piece_type = PieceType::QUEEN;
     else if (from_bb & currentState.king[us_idx]) moving_piece_type = PieceType::KING;
 
-    bool is_capture = (to_bb & currentState.all_pieces);
-    
-    // --- Update Piece Bitboards ---
-    
-    // 1. Move the piece
-    auto move_piece = [&](PieceType pt) {
-        switch(pt) {
-            case PieceType::PAWN:   currentState.pawn[us_idx] ^= from_to_bb; break;
-            case PieceType::KNIGHT: currentState.knight[us_idx] ^= from_to_bb; break;
-            case PieceType::BISHOP: currentState.bishop[us_idx] ^= from_to_bb; break;
-            case PieceType::ROOK:   currentState.rook[us_idx] ^= from_to_bb; break;
-            case PieceType::QUEEN:  currentState.queen[us_idx] ^= from_to_bb; break;
-            case PieceType::KING:   currentState.king[us_idx] ^= from_to_bb; break;
-        }
-    };
-    move_piece(moving_piece_type);
+    // --- Zobrist Update Part 2: Move piece ---
+    int moving_piece_idx = us_idx * 6 + static_cast<int>(moving_piece_type);
+    hash ^= Zobrist::pieceKeys[moving_piece_idx][move.start.rank * 8 + move.start.file]; // XOR out from old square
+    hash ^= Zobrist::pieceKeys[moving_piece_idx][move.end.rank * 8 + move.end.file];   // XOR in to new square
 
-    // 2. Handle captures
-    if (is_capture) {
-        if (to_bb & currentState.pawn[them_idx]) currentState.pawn[them_idx] ^= to_bb;
-        else if (to_bb & currentState.knight[them_idx]) currentState.knight[them_idx] ^= to_bb;
-        else if (to_bb & currentState.bishop[them_idx]) currentState.bishop[them_idx] ^= to_bb;
-        else if (to_bb & currentState.rook[them_idx]) currentState.rook[them_idx] ^= to_bb;
-        else if (to_bb & currentState.queen[them_idx]) currentState.queen[them_idx] ^= to_bb;
+    // --- Update Piece Bitboards ---
+    auto move_piece_bb = [&](Bitboard& bb) { bb ^= from_to_bb; };
+    switch(moving_piece_type) {
+        case PieceType::PAWN:   move_piece_bb(currentState.pawn[us_idx]); break;
+        case PieceType::KNIGHT: move_piece_bb(currentState.knight[us_idx]); break;
+        case PieceType::BISHOP: move_piece_bb(currentState.bishop[us_idx]); break;
+        case PieceType::ROOK:   move_piece_bb(currentState.rook[us_idx]); break;
+        case PieceType::QUEEN:  move_piece_bb(currentState.queen[us_idx]); break;
+        case PieceType::KING:   move_piece_bb(currentState.king[us_idx]); break;
     }
 
-    // 3. Handle special moves
+    // --- Handle Captures ---
+    if (to_bb & currentState.all_pieces) {
+        PieceType captured_piece_type = PieceType::PAWN;
+        if (to_bb & currentState.pawn[them_idx]) { captured_piece_type = PieceType::PAWN; currentState.pawn[them_idx] ^= to_bb; }
+        else if (to_bb & currentState.knight[them_idx]) { captured_piece_type = PieceType::KNIGHT; currentState.knight[them_idx] ^= to_bb; }
+        else if (to_bb & currentState.bishop[them_idx]) { captured_piece_type = PieceType::BISHOP; currentState.bishop[them_idx] ^= to_bb; }
+        else if (to_bb & currentState.rook[them_idx]) { captured_piece_type = PieceType::ROOK; currentState.rook[them_idx] ^= to_bb; }
+        else if (to_bb & currentState.queen[them_idx]) { captured_piece_type = PieceType::QUEEN; currentState.queen[them_idx] ^= to_bb; }
+        
+        // --- Zobrist Update Part 3: Remove captured piece ---
+        int captured_piece_idx = them_idx * 6 + static_cast<int>(captured_piece_type);
+        hash ^= Zobrist::pieceKeys[captured_piece_idx][move.end.rank * 8 + move.end.file];
+    }
+
+    // --- Handle Special Moves ---
     // En Passant
-    if (moving_piece_type == PieceType::PAWN && move.end == currentState.enPassantTarget) {
+    if (moving_piece_type == PieceType::PAWN && move.end == oldEnPassantTarget) {
         Bitboard captured_pawn_bb = (currentState.currentTurn == Color::WHITE) ? (to_bb >> 8) : (to_bb << 8);
+        int captured_sq_idx = __builtin_ctzll(captured_pawn_bb);
         currentState.pawn[them_idx] ^= captured_pawn_bb;
+        // --- Zobrist Update Part 3b: Remove en passant captured pawn ---
+        hash ^= Zobrist::pieceKeys[them_idx * 6 + static_cast<int>(PieceType::PAWN)][captured_sq_idx];
     }
 
     // Promotion
     if (move.promotionPiece.has_value()) {
         currentState.pawn[us_idx] ^= to_bb; // Remove the pawn from the promotion square
-        move_piece(*move.promotionPiece);      // Add the new piece
+        switch(*move.promotionPiece) { // Add the new piece
+            case PieceType::QUEEN:  currentState.queen[us_idx]  |= to_bb; break;
+            case PieceType::ROOK:   currentState.rook[us_idx]   |= to_bb; break;
+            case PieceType::BISHOP: currentState.bishop[us_idx] |= to_bb; break;
+            case PieceType::KNIGHT: currentState.knight[us_idx] |= to_bb; break;
+            default: break;
+        }
+        // --- Zobrist Update Part 4: Handle promotion ---
+        hash ^= Zobrist::pieceKeys[us_idx * 6 + static_cast<int>(PieceType::PAWN)][move.end.rank * 8 + move.end.file]; // remove pawn
+        hash ^= Zobrist::pieceKeys[us_idx * 6 + static_cast<int>(*move.promotionPiece)][move.end.rank * 8 + move.end.file]; // add promoted piece
     }
 
     // Castling
     if (moving_piece_type == PieceType::KING && abs(move.start.file - move.end.file) == 2) {
-        Bitboard rook_from_bb, rook_to_bb;
+        
+        int rook_start_sq, rook_end_sq;
         if (move.end.file == 6) { // Kingside
-            rook_from_bb = BitboardUtils::squareToBitboard({move.start.rank, 7});
-            rook_to_bb = BitboardUtils::squareToBitboard({move.start.rank, 5});
+            rook_start_sq = move.start.rank * 8 + 7;
+            rook_end_sq = move.start.rank * 8 + 5;
         } else { // Queenside
-            rook_from_bb = BitboardUtils::squareToBitboard({move.start.rank, 0});
-            rook_to_bb = BitboardUtils::squareToBitboard({move.start.rank, 3});
+            rook_start_sq = move.start.rank * 8 + 0;
+            rook_end_sq = move.start.rank * 8 + 3;
         }
-        currentState.rook[us_idx] ^= (rook_from_bb | rook_to_bb);
+        currentState.rook[us_idx] ^= (BitboardUtils::squareToBitboard({rook_start_sq/8, rook_start_sq%8}) | BitboardUtils::squareToBitboard({rook_end_sq/8, rook_end_sq%8}));
+        // --- Zobrist Update Part 5: Handle castling rook move ---
+        hash ^= Zobrist::pieceKeys[us_idx * 6 + static_cast<int>(PieceType::ROOK)][rook_start_sq];
+        hash ^= Zobrist::pieceKeys[us_idx * 6 + static_cast<int>(PieceType::ROOK)][rook_end_sq];
     }
 
     // --- Update Game State ---
-
-    // 1. Update castling rights
+    // Update castling rights
     if (moving_piece_type == PieceType::KING) {
-        if (us_idx == 0) {
-            currentState.castleRights.whiteKingSide = false;
-            currentState.castleRights.whiteQueenSide = false;
-        } else {
-            currentState.castleRights.blackKingSide = false;
-            currentState.castleRights.blackQueenSide = false;
-        }
+        if (us_idx == 0) { currentState.castleRights.whiteKingSide = false; currentState.castleRights.whiteQueenSide = false; }
+        else { currentState.castleRights.blackKingSide = false; currentState.castleRights.blackQueenSide = false; }
     }
-    if (from_bb & 0x81) { // A1 or H1
-        if (from_bb & 0x1) currentState.castleRights.whiteQueenSide = false;
-        if (from_bb & 0x80) currentState.castleRights.whiteKingSide = false;
-    }
-    if (from_bb & 0x8100000000000000) { // A8 or H8
-        if (from_bb & 0x0100000000000000) currentState.castleRights.blackQueenSide = false;
-        if (from_bb & 0x8000000000000000) currentState.castleRights.blackKingSide = false;
-    }
-    if (to_bb & 0x81) { // Capture on A1 or H1
-        if (to_bb & 0x1) currentState.castleRights.whiteQueenSide = false;
-        if (to_bb & 0x80) currentState.castleRights.whiteKingSide = false;
-    }
-     if (to_bb & 0x8100000000000000) { // Capture on A8 or H8
-        if (to_bb & 0x0100000000000000) currentState.castleRights.blackQueenSide = false;
-        if (to_bb & 0x8000000000000000) currentState.castleRights.blackKingSide = false;
-    }
+    if (from_bb & 0x1) currentState.castleRights.whiteQueenSide = false;
+    if (from_bb & 0x80) currentState.castleRights.whiteKingSide = false;
+    if (from_bb & 0x0100000000000000) currentState.castleRights.blackQueenSide = false;
+    if (from_bb & 0x8000000000000000) currentState.castleRights.blackKingSide = false;
+    if (to_bb & 0x1) currentState.castleRights.whiteQueenSide = false;
+    if (to_bb & 0x80) currentState.castleRights.whiteKingSide = false;
+    if (to_bb & 0x0100000000000000) currentState.castleRights.blackQueenSide = false;
+    if (to_bb & 0x8000000000000000) currentState.castleRights.blackKingSide = false;
 
-    // 2. Update en passant target
+    // Update en passant target
     currentState.enPassantTarget = std::nullopt;
     if (moving_piece_type == PieceType::PAWN && abs(move.start.rank - move.end.rank) == 2) {
         currentState.enPassantTarget = Square{(move.start.rank + move.end.rank) / 2, move.start.file};
     }
 
-    // 3. Update clocks
-    if (moving_piece_type == PieceType::PAWN || is_capture) {
-        currentState.halfmoveClock = 0;
-    } else {
-        currentState.halfmoveClock++;
-    }
-    if (currentState.currentTurn == Color::BLACK) {
-        currentState.fullmoveNumber++;
-    }
+    // Update clocks
+    bool is_capture = (to_bb & currentState.all_pieces);
+    if (moving_piece_type == PieceType::PAWN || is_capture) { currentState.halfmoveClock = 0; } 
+    else { currentState.halfmoveClock++; }
+    if (currentState.currentTurn == Color::BLACK) { currentState.fullmoveNumber++; }
 
-    // 4. Switch turn
+    // Switch turn
     currentState.currentTurn = (currentState.currentTurn == Color::WHITE) ? Color::BLACK : Color::WHITE;
 
-    // 5. Update composite bitboards
+    // Update composite bitboards
     updateCompositeBitboards();
+
+    // --- Zobrist Update Part 6: Add new state ---
+    const int newCastleRights = (currentState.castleRights.whiteKingSide << 3) |
+                              (currentState.castleRights.whiteQueenSide << 2) |
+                              (currentState.castleRights.blackKingSide << 1) |
+                              (currentState.castleRights.blackQueenSide);
+    hash ^= Zobrist::castleKeys[newCastleRights];
+    if (currentState.enPassantTarget) {
+        hash ^= Zobrist::enPassantKeys[currentState.enPassantTarget->file];
+    }
+    currentState.zobristKey = hash;
 }
 
 

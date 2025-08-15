@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <string>
+#include <iostream>
 
 enum class Color { WHITE, BLACK };
 enum class PieceType { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
@@ -51,5 +52,15 @@ struct Move {
         return str;
     }
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Move& move) {
+    os << move.toString();
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Color& color) {
+    os << (color == Color::WHITE ? "WHITE" : "BLACK");
+    return os;
+}
 
 #endif // DATATYPES_H

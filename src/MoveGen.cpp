@@ -20,8 +20,8 @@ namespace MoveGen {
         // Pawn captures
         Bitboard pawns = boardState.pawn[color_idx];
         if (boardState.currentTurn == Color::WHITE) {
-            Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x0101010101010101ULL;
-            Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x8080808080808080ULL;
+            Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x8080808080808080ULL;
+            Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x0101010101010101ULL;
             for (int i = 0; i < 64; ++i) {
                 if ((left_captures >> i) & 1) {
                      if (i / 8 == 7) { // Promotion
@@ -45,8 +45,8 @@ namespace MoveGen {
                 }
             }
         } else { // Black
-            Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x0101010101010101ULL;
-            Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x8080808080808080ULL;
+            Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x8080808080808080ULL;
+            Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x0101010101010101ULL;
             for (int i = 0; i < 64; ++i) {
                 if ((left_captures >> i) & 1) {
                     if (i / 8 == 0) { // Promotion
@@ -114,7 +114,7 @@ namespace MoveGen {
         Bitboard bishops = boardState.bishop[color_idx];
         while(bishops) {
             int from_sq = __builtin_ctzll(bishops);
-            Bitboard attacks = MagicBitboards::getBishopAttacks(from_sq, all_pieces) & opponent_pieces;
+            Bitboard attacks = MagicBitboards::get_bishop_attacks({from_sq/8, from_sq%8}, all_pieces) & opponent_pieces;
             while(attacks) {
                 int to_sq = __builtin_ctzll(attacks);
                 moves.push_back({Square{from_sq/8, from_sq%8}, Square{to_sq/8, to_sq%8}});
@@ -127,7 +127,7 @@ namespace MoveGen {
         Bitboard rooks = boardState.rook[color_idx];
         while(rooks) {
             int from_sq = __builtin_ctzll(rooks);
-            Bitboard attacks = MagicBitboards::getRookAttacks(from_sq, all_pieces) & opponent_pieces;
+            Bitboard attacks = MagicBitboards::get_rook_attacks({from_sq/8, from_sq%8}, all_pieces) & opponent_pieces;
             while(attacks) {
                 int to_sq = __builtin_ctzll(attacks);
                 moves.push_back({Square{from_sq/8, from_sq%8}, Square{to_sq/8, to_sq%8}});
@@ -140,7 +140,7 @@ namespace MoveGen {
         Bitboard queens = boardState.queen[color_idx];
         while(queens) {
             int from_sq = __builtin_ctzll(queens);
-            Bitboard attacks = MagicBitboards::getQueenAttacks(from_sq, all_pieces) & opponent_pieces;
+            Bitboard attacks = MagicBitboards::get_queen_attacks({from_sq/8, from_sq%8}, all_pieces) & opponent_pieces;
             while(attacks) {
                 int to_sq = __builtin_ctzll(attacks);
                 moves.push_back({Square{from_sq/8, from_sq%8}, Square{to_sq/8, to_sq%8}});
@@ -213,8 +213,8 @@ namespace MoveGen {
 
     // Captures
     if (boardState.currentTurn == Color::WHITE) {
-        Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x0101010101010101ULL;
-        Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x8080808080808080ULL;
+        Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x8080808080808080ULL;
+        Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x0101010101010101ULL;
         for (int i = 0; i < 64; ++i) {
             if ((left_captures >> i) & 1) {
                  if (i / 8 == 7) { // Promotion
@@ -238,8 +238,8 @@ namespace MoveGen {
             }
         }
     } else { // Black
-        Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x0101010101010101ULL;
-        Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x8080808080808080ULL;
+        Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x8080808080808080ULL;
+        Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x0101010101010101ULL;
         for (int i = 0; i < 64; ++i) {
             if ((left_captures >> i) & 1) {
                 if (i / 8 == 0) { // Promotion
@@ -322,34 +322,12 @@ namespace MoveGen {
 
     while(bishops) {
         int from_sq = __builtin_ctzll(bishops);
+        Bitboard attacks = MagicBitboards::get_bishop_attacks({from_sq/8, from_sq%8}, all_pieces) & ~friendly_pieces;
 
-        // North-East
-        for (int r = from_sq/8 + 1, f = from_sq%8 + 1; r < 8 && f < 8; ++r, ++f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // North-West
-        for (int r = from_sq/8 + 1, f = from_sq%8 - 1; r < 8 && f >= 0; ++r, --f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // South-East
-        for (int r = from_sq/8 - 1, f = from_sq%8 + 1; r >= 0 && f < 8; --r, ++f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // South-West
-        for (int r = from_sq/8 - 1, f = from_sq%8 - 1; r >= 0 && f >= 0; --r, --f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
+        while(attacks) {
+            int to_sq = __builtin_ctzll(attacks);
+            moves.push_back({Square{from_sq/8, from_sq%8}, Square{to_sq/8, to_sq%8}});
+            attacks &= attacks - 1;
         }
 
         bishops &= bishops - 1;
@@ -364,34 +342,12 @@ namespace MoveGen {
 
     while(rooks) {
         int from_sq = __builtin_ctzll(rooks);
+        Bitboard attacks = MagicBitboards::get_rook_attacks({from_sq/8, from_sq%8}, all_pieces) & ~friendly_pieces;
 
-        // North
-        for (int r = from_sq/8 + 1; r < 8; ++r) {
-            Bitboard to_bb = 1ULL << (r * 8 + from_sq%8);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, from_sq%8}});
-            if (to_bb & all_pieces) break;
-        }
-        // South
-        for (int r = from_sq/8 - 1; r >= 0; --r) {
-            Bitboard to_bb = 1ULL << (r * 8 + from_sq%8);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, from_sq%8}});
-            if (to_bb & all_pieces) break;
-        }
-        // East
-        for (int f = from_sq%8 + 1; f < 8; ++f) {
-            Bitboard to_bb = 1ULL << (from_sq/8 * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{from_sq/8, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // West
-        for (int f = from_sq%8 - 1; f >= 0; --f) {
-            Bitboard to_bb = 1ULL << (from_sq/8 * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{from_sq/8, f}});
-            if (to_bb & all_pieces) break;
+        while(attacks) {
+            int to_sq = __builtin_ctzll(attacks);
+            moves.push_back({Square{from_sq/8, from_sq%8}, Square{to_sq/8, to_sq%8}});
+            attacks &= attacks - 1;
         }
 
         rooks &= rooks - 1;
@@ -406,65 +362,12 @@ namespace MoveGen {
 
     while(queens) {
         int from_sq = __builtin_ctzll(queens);
+        Bitboard attacks = MagicBitboards::get_queen_attacks({from_sq/8, from_sq%8}, all_pieces) & ~friendly_pieces;
 
-        // Rook moves
-        // North
-        for (int r = from_sq/8 + 1; r < 8; ++r) {
-            Bitboard to_bb = 1ULL << (r * 8 + from_sq%8);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, from_sq%8}});
-            if (to_bb & all_pieces) break;
-        }
-        // South
-        for (int r = from_sq/8 - 1; r >= 0; --r) {
-            Bitboard to_bb = 1ULL << (r * 8 + from_sq%8);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, from_sq%8}});
-            if (to_bb & all_pieces) break;
-        }
-        // East
-        for (int f = from_sq%8 + 1; f < 8; ++f) {
-            Bitboard to_bb = 1ULL << (from_sq/8 * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{from_sq/8, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // West
-        for (int f = from_sq%8 - 1; f >= 0; --f) {
-            Bitboard to_bb = 1ULL << (from_sq/8 * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{from_sq/8, f}});
-            if (to_bb & all_pieces) break;
-        }
-
-        // Bishop moves
-        // North-East
-        for (int r = from_sq/8 + 1, f = from_sq%8 + 1; r < 8 && f < 8; ++r, ++f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // North-West
-        for (int r = from_sq/8 + 1, f = from_sq%8 - 1; r < 8 && f >= 0; ++r, --f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // South-East
-        for (int r = from_sq/8 - 1, f = from_sq%8 + 1; r >= 0 && f < 8; --r, ++f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
-        }
-        // South-West
-        for (int r = from_sq/8 - 1, f = from_sq%8 - 1; r >= 0 && f >= 0; --r, --f) {
-            Bitboard to_bb = 1ULL << (r * 8 + f);
-            if (to_bb & friendly_pieces) break;
-            moves.push_back({Square{from_sq/8, from_sq%8}, Square{r, f}});
-            if (to_bb & all_pieces) break;
+        while(attacks) {
+            int to_sq = __builtin_ctzll(attacks);
+            moves.push_back({Square{from_sq/8, from_sq%8}, Square{to_sq/8, to_sq%8}});
+            attacks &= attacks - 1;
         }
 
         queens &= queens - 1;

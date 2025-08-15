@@ -3,13 +3,19 @@
 
 Game::Game() : status(GameStatus::ONGOING) {
     board.setupInitialPosition();
+    updateStatus(); // Explicitly update status after setting up the board
+}
+
+Game::Game(const std::string& fen) : status(GameStatus::ONGOING) {
+    board.setupPositionFromFen(fen);
+    updateStatus();
 }
 
 BitboardRepresentation& Game::getBoard() { return board; }
 const BitboardRepresentation& Game::getBoard() const { return board; }
 GameStatus Game::getStatus() const { return status; }
 
-std::vector<Move> Game::getLegalMovesForPieceAt(Square s) {
+std::vector<Move> Game::getLegalMovesForPieceAt(Square s) const {
     std::vector<Move> allLegalMoves = generateAllLegalMoves();
     std::vector<Move> pieceMoves;
     for (const auto& move : allLegalMoves) {
@@ -22,7 +28,7 @@ std::vector<Move> Game::getLegalMovesForPieceAt(Square s) {
 
 #include <iostream>
 
-std::vector<Move> Game::generateAllLegalMoves() {
+std::vector<Move> Game::generateAllLegalMoves() const {
     std::vector<Move> pseudoLegalMoves;
     MoveGen::generateMoves(board.getState(), pseudoLegalMoves);
     std::vector<Move> legalMoves;

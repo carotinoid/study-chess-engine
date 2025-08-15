@@ -2,9 +2,12 @@
 build/
 *.o
 chessai
+test_runner
 
 # Submodule directory
 eco.json
+.venv
 
 .env
 tmp
+note

@@ -82,10 +82,10 @@ Bitboard mask_rook_attacks(int sq) {
     Bitboard result = 0ULL;
     int r = sq / 8;
     int f = sq % 8;
-    for (int i = r + 1; i < 7; i++) result |= (1ULL << (i * 8 + f));
-    for (int i = r - 1; i > 0; i--) result |= (1ULL << (i * 8 + f));
-    for (int i = f + 1; i < 7; i++) result |= (1ULL << (r * 8 + i));
-    for (int i = f - 1; i > 0; i--) result |= (1ULL << (r * 8 + i));
+    for (int i = r + 1; i <= 7; i++) result |= (1ULL << (i * 8 + f));
+    for (int i = r - 1; i >= 0; i--) result |= (1ULL << (i * 8 + f));
+    for (int i = f + 1; i <= 7; i++) result |= (1ULL << (r * 8 + i));
+    for (int i = f - 1; i >= 0; i--) result |= (1ULL << (r * 8 + i));
     return result;
 }
 
@@ -94,12 +94,35 @@ Bitboard mask_bishop_attacks(int sq) {
     Bitboard result = 0ULL;
     int r = sq / 8;
     int f = sq % 8;
-    for (int i = r + 1, j = f + 1; i < 7 && j < 7; i++, j++) result |= (1ULL << (i * 8 + j));
-    for (int i = r + 1, j = f - 1; i < 7 && j > 0; i++, j--) result |= (1ULL << (i * 8 + j));
-    for (int i = r - 1, j = f + 1; i > 0 && j < 7; i--, j++) result |= (1ULL << (i * 8 + j));
-    for (int i = r - 1, j = f - 1; i > 0 && j > 0; i--, j--) result |= (1ULL << (i * 8 + j));
+    for (int i = r + 1, j = f + 1; i <= 7 && j <= 7; i++, j++) result |= (1ULL << (i * 8 + j));
+    for (int i = r + 1, j = f - 1; i <= 7 && j >= 0; i++, j--) result |= (1ULL << (i * 8 + j));
+    for (int i = r - 1, j = f + 1; i >= 0 && j <= 7; i--, j++) result |= (1ULL << (i * 8 + j));
+    for (int i = r - 1, j = f - 1; i >= 0 && j >= 0; i--, j--) result |= (1ULL << (i * 8 + j));
     return result;
 }
+
+//Bitboard mask_rook_attacks(int sq) {
+//    Bitboard result = 0ULL;
+//    int r = sq / 8;
+//    int f = sq % 8;
+//    for (int i = r + 1; i <= 6; i++) result |= (1ULL << (i * 8 + f));
+//    for (int i = r - 1; i >= 1; i--) result |= (1ULL << (i * 8 + f));
+//    for (int i = f + 1; i <= 6; i++) result |= (1ULL << (r * 8 + i));
+//    for (int i = f - 1; i >= 1; i--) result |= (1ULL << (r * 8 + i));
+//    return result;
+//}
+//
+//Bitboard mask_bishop_attacks(int sq) {
+//    Bitboard result = 0ULL;
+//    int r = sq / 8;
+//    int f = sq % 8;
+//    for (int i = r + 1, j = f + 1; i <= 6 && j <= 6; i++, j++) result |= (1ULL << (i * 8 + j));
+//    for (int i = r + 1, j = f - 1; i <= 6 && j >= 1;  i++, j--) result |= (1ULL << (i * 8 + j));
+//    for (int i = r - 1, j = f + 1; i >= 1 && j <= 6;  i--, j++) result |= (1ULL << (i * 8 + j));
+//    for (int i = r - 1, j = f - 1; i >= 1 && j >= 1;  i--, j--) result |= (1ULL << (i * 8 + j));
+//    return result;
+//}
+
 
 // Generates rook attacks on the fly (the slow way, for initialization).
 Bitboard rook_attacks_on_the_fly(int sq, Bitboard block) {
@@ -167,7 +190,7 @@ Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask) {
 
 namespace MagicBitboards {
 
-void init() {
+void Init() {
     for (int sq = 0; sq < 64; sq++) {
         // Rook initialization
         rook_masks[sq] = mask_rook_attacks(sq);
@@ -189,6 +212,7 @@ void init() {
             bishop_attacks[sq][magic_index] = bishop_attacks_on_the_fly(sq, occupancy);
         }
     }
+    
 }
 
 Bitboard get_rook_attacks(Square s, Bitboard occupancy) {
@@ -203,6 +227,10 @@ Bitboard get_bishop_attacks(Square s, Bitboard occupancy) {
     occupancy &= bishop_masks[sq_idx];
     int magic_index = (occupancy * bishop_magics[sq_idx]) >> (64 - bishop_relevant_bits[sq_idx]);
     return bishop_attacks[sq_idx][magic_index];
+}
+
+Bitboard get_queen_attacks(Square s, Bitboard occupancy) {
+    return get_rook_attacks(s, occupancy) | get_bishop_attacks(s, occupancy);
 }
 
 } // namespace MagicBitboards
