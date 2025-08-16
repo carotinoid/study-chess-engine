@@ -3,11 +3,13 @@
 #include <iostream>
 
 void run_fen_tests() {
+    __last_game_for_debug = nullptr; // Reset last game for debug
     std::cout << "\n--- Running FEN Parsing Tests... ---" << std::endl;
 
     // Test Case 1: Kiwipete FEN
     std::string fen1 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
     Game game1(fen1);
+    __last_game_for_debug = &game1; // Set last game for debug
     const BoardState& state1 = game1.getBoard().getState();
 
     // Verify piece positions using ASSERT_TRUE with bitwise AND
@@ -32,6 +34,7 @@ void run_fen_tests() {
     // Test Case 2: Position with en passant target
     std::string fen2 = "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2";
     Game game2(fen2);
+    __last_game_for_debug = &game2; // Set last game for debug
     const BoardState& state2 = game2.getBoard().getState();
     ASSERT_EQ(state2.currentTurn, Color::WHITE);
     ASSERT_EQ(state2.enPassantTarget.has_value(), true);

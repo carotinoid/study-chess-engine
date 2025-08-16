@@ -5,6 +5,10 @@
 #include <string>
 #include <sstream>
 #include <stdexcept>
+#include <../include/Game.h>
+#include <../include/Debug.h>
+
+inline Game* __last_game_for_debug = nullptr;
 
 // Custom exception for assertion failures
 class AssertException : public std::runtime_error {
@@ -17,6 +21,7 @@ public:
     do { \
         if (!(condition)) { \
             std::stringstream ss; \
+            if(__last_game_for_debug != nullptr) Debug::renderBoard(*__last_game_for_debug); \
             ss << "Assertion failed: (" << #condition << "), function " << __func__ \
                << ", file " << __FILE__ << ", line " << __LINE__ << "."; \
             throw AssertException(ss.str()); \
@@ -28,6 +33,7 @@ public:
     do { \
         if (!((a) == (b))) { \
             std::stringstream ss; \
+            Debug::renderBoard(*__last_game_for_debug); \
             ss << "Assertion failed: (" << #a << " == " << #b << "), values are: " \
                << (a) << " and " << (b) << ", function " << __func__ \
                << ", file " << __FILE__ << ", line " << __LINE__ << "."; \

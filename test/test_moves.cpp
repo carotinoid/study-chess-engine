@@ -12,10 +12,11 @@
 
 #define SETUP(FEN) \
 Game game(FEN); \
+__last_game_for_debug = &game; \
 const BoardState& state = game.getBoard().getState(); \
 std::vector<Move> all_moves; \
 MoveGen::generateMoves(state, all_moves); \
-Debug::renderBoard(game); \
+
 
 std::ostream& operator<<(std::ostream& os, const std::set<std::string>& moves) {
     os << "{ ";

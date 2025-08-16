@@ -9,6 +9,7 @@ void run_test_make_move();
 void run_test_render_board();
 
 void run_board_tests() {
+    __last_game_for_debug = nullptr; // Reset last game for debug
     std::cout << "\n--- Running Board tests... ---" << std::endl;
     run_test_make_move();
     run_test_render_board();
@@ -17,6 +18,7 @@ void run_board_tests() {
 
 TEST_CASE(test_make_move) {
     Game game;
+    __last_game_for_debug = &game; // Set last game for debug
     // e2e4
     Move m = {Square{1, 4}, Square{3, 4}};
     game.makeMove(m);
@@ -33,6 +35,7 @@ TEST_CASE(test_make_move) {
 
 TEST_CASE(test_render_board) {
     Game game;
+    __last_game_for_debug = &game; // Set last game for debug
     std::cout << "\n# Rendering Initial Board" << std::endl;
     Debug::renderBoard(game);
 
