@@ -16,14 +16,27 @@ $(document).ready(function() {
     }
 
     function onDrop(source, target) {
-        // see if the move is legal
-        var move = game.move({
+        var move;
+        // Check if the move is a promotion
+        var piece = game.get(source).type;
+        var isPromotion = (piece === 'p' && (target.charAt(1) === '8' || target.charAt(1) === '1'));
+
+        var promotionPiece = 'q'; // Default to queen
+        if (isPromotion) {
+            var customPromotion = prompt('Promote to (q, r, b, n)?', 'q');
+            if (customPromotion && ['q', 'r', 'b', 'n'].includes(customPromotion.toLowerCase())) {
+                promotionPiece = customPromotion.toLowerCase();
+            }
+        }
+
+        // Attempt the move
+        move = game.move({
             from: source,
             to: target,
-            promotion: 'q' // NOTE: always promote to a queen for simplicity
+            promotion: promotionPiece
         });
 
-        // illegal move
+        // Illegal move
         if (move === null) return 'snapback';
 
         updateStatus();
@@ -85,6 +98,12 @@ $(document).ready(function() {
     function getEngineMove() {
         // Do nothing if it's the player's turn
         if (game.turn() === playerColor) return;
+
+        // Do not get a move if the game is over
+        if (game.game_over()) {
+            $('#engine-status').html('Game Over');
+            return;
+        }
 
         var depth = $('#depth').val();
         $('#engine-status').html('Thinking...');
