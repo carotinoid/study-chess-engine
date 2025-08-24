@@ -63,4 +63,16 @@ inline std::ostream& operator<<(std::ostream& os, const Color& color) {
     return os;
 }
 
+inline std::string to_string(PieceType p) {
+    switch (p) {
+        case PieceType::PAWN:   return "P";
+        case PieceType::KNIGHT: return "N";
+        case PieceType::BISHOP: return "B";
+        case PieceType::ROOK:   return "R";
+        case PieceType::QUEEN:  return "Q";
+        case PieceType::KING:   return "K";
+        default: return "";
+    }
+}
+
 #endif // DATATYPES_H

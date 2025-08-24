@@ -1,6 +1,7 @@
 #include "../include/AIPlayer.h"
 #include "../include/Game.h"
 #include "../include/MoveGen.h"
+#include <iostream>
 
 #include <limits> // For std::numeric_limits
 #include <vector> // For std::vector
@@ -49,6 +50,8 @@ namespace {
 AIPlayer::AIPlayer() {
     // Initialize the transposition table with a size of 64 MB
     transpositionTable = std::make_unique<TranspositionTable>(64);
+    openingBook = std::make_unique<OpeningBook>("opening/eco");
+    openingBook->load();
 }
 
 int AIPlayer::evaluate(const BoardState& boardState) {
@@ -266,7 +269,11 @@ int AIPlayer::quiescenceSearch(Game& game, int alpha, int beta) {
 
 int AIPlayer::minimax(Game& game, int depth, bool maximizingPlayer, int alpha, int beta) {
     if (game.getStatus() != GameStatus::ONGOING) {
-        return evaluate(game.getBoard().getState());
+        if (game.getStatus() == GameStatus::CHECKMATE) {
+            return maximizingPlayer ? -MATE_SCORE : MATE_SCORE;
+        } else { // Stalemate or Draw
+            return 0;
+        }
     }
 
     uint64_t hash = game.getBoard().getState().zobristKey;
@@ -368,6 +375,15 @@ int AIPlayer::minimax(Game& game, int depth, bool maximizingPlayer, int alpha, i
 }
 
 Move AIPlayer::findBestMove(Game& game, int max_depth) {
+    // Check opening book first
+    std::vector<Move> bookMoves = openingBook->findMoves(game.getBoard().getState().zobristKey);
+    if (!bookMoves.empty()) {
+        // If there are multiple moves, pick one randomly
+        // This adds variability to the opening play.
+        int randomIndex = rand() % bookMoves.size();
+        return bookMoves[randomIndex];
+    }
+
     transpositionTable->Clear(); // Clear TT for new search
     Move bestMove;
     std::vector<Move> principal_variation;

@@ -15,18 +15,7 @@ namespace {
 }
 
 BitboardRepresentation::BitboardRepresentation() {
-    // Initialize all bitboards to 0
-    for (int i = 0; i < 2; ++i) {
-        currentState.pawn[i] = 0;
-        currentState.knight[i] = 0;
-        currentState.bishop[i] = 0;
-        currentState.rook[i] = 0;
-        currentState.queen[i] = 0;
-        currentState.king[i] = 0;
-    }
-    updateCompositeBitboards();
-    currentState.currentTurn = Color::WHITE;
-    // Other initializations
+    setupInitialPosition();
 }
 
 void BitboardRepresentation::setupInitialPosition() {
@@ -295,6 +284,65 @@ void BitboardRepresentation::makeMove(const Move& move) {
         hash ^= Zobrist::enPassantKeys[currentState.enPassantTarget->file];
     }
     currentState.zobristKey = hash;
+}
+
+std::string BitboardRepresentation::toFen() const {
+    std::stringstream fen;
+    for (int rank = 7; rank >= 0; --rank) {
+        int empty_squares = 0;
+        for (int file = 0; file < 8; ++file) {
+            Square sq = {rank, file};
+            Bitboard bb = BitboardUtils::squareToBitboard(sq);
+            char piece_char = 0;
+            if (currentState.pawn[0] & bb) piece_char = 'P';
+            else if (currentState.knight[0] & bb) piece_char = 'N';
+            else if (currentState.bishop[0] & bb) piece_char = 'B';
+            else if (currentState.rook[0] & bb) piece_char = 'R';
+            else if (currentState.queen[0] & bb) piece_char = 'Q';
+            else if (currentState.king[0] & bb) piece_char = 'K';
+            else if (currentState.pawn[1] & bb) piece_char = 'p';
+            else if (currentState.knight[1] & bb) piece_char = 'n';
+            else if (currentState.bishop[1] & bb) piece_char = 'b';
+            else if (currentState.rook[1] & bb) piece_char = 'r';
+            else if (currentState.queen[1] & bb) piece_char = 'q';
+            else if (currentState.king[1] & bb) piece_char = 'k';
+
+            if (piece_char != 0) {
+                if (empty_squares > 0) {
+                    fen << empty_squares;
+                    empty_squares = 0;
+                }
+                fen << piece_char;
+            } else {
+                empty_squares++;
+            }
+        }
+        if (empty_squares > 0) {
+            fen << empty_squares;
+        }
+        if (rank > 0) {
+            fen << '/';
+        }
+    }
+
+    fen << ' ' << (currentState.currentTurn == Color::WHITE ? 'w' : 'b');
+
+    std::string castling_rights;
+    if (currentState.castleRights.whiteKingSide) castling_rights += 'K';
+    if (currentState.castleRights.whiteQueenSide) castling_rights += 'Q';
+    if (currentState.castleRights.blackKingSide) castling_rights += 'k';
+    if (currentState.castleRights.blackQueenSide) castling_rights += 'q';
+    fen << ' ' << (castling_rights.empty() ? "-" : castling_rights);
+
+    if (currentState.enPassantTarget) {
+        fen << ' ' << (char)('a' + currentState.enPassantTarget->file) << (char)('1' + currentState.enPassantTarget->rank);
+    } else {
+        fen << " -";
+    }
+
+    fen << ' ' << currentState.halfmoveClock << ' ' << currentState.fullmoveNumber;
+
+    return fen.str();
 }
 
 

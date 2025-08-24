@@ -42,6 +42,7 @@ public:
     // Functions to manipulate the board state
     void makeMove(const Move& move);
     bool isKingInCheck(Color kingColor) const;
+    std::string toFen() const;
     // void unmakeMove(...); // For search algorithms
 
     // Move generation

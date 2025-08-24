@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "TranspositionTable.h"
+#include "Book.h"
 
 class Game; // Forward Declaration
 
@@ -40,7 +41,10 @@ public:
     static const int ROOK_ON_OPEN_FILE_BONUS = 50;
     static const int ROOK_ON_SEMI_OPEN_FILE_BONUS = 25;
 
+    static const int MATE_SCORE = 32000;
+
 private:
+    std::unique_ptr<OpeningBook> openingBook;
     std::unique_ptr<TranspositionTable> transpositionTable;
     int minimax(Game& game, int depth, bool maximizingPlayer, int alpha, int beta);
     int quiescenceSearch(Game& game, int alpha, int beta);

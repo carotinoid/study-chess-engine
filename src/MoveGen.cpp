@@ -20,8 +20,8 @@ namespace MoveGen {
         // Pawn captures
         Bitboard pawns = boardState.pawn[color_idx];
         if (boardState.currentTurn == Color::WHITE) {
-            Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x8080808080808080ULL;
-            Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x0101010101010101ULL;
+            Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x0101010101010101ULL;
+            Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x8080808080808080ULL;
             for (int i = 0; i < 64; ++i) {
                 if ((left_captures >> i) & 1) {
                      if (i / 8 == 7) { // Promotion
@@ -45,8 +45,8 @@ namespace MoveGen {
                 }
             }
         } else { // Black
-            Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x8080808080808080ULL;
-            Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x0101010101010101ULL;
+            Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x0101010101010101ULL;
+            Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x8080808080808080ULL;
             for (int i = 0; i < 64; ++i) {
                 if ((left_captures >> i) & 1) {
                     if (i / 8 == 0) { // Promotion
@@ -213,8 +213,8 @@ namespace MoveGen {
 
     // Captures
     if (boardState.currentTurn == Color::WHITE) {
-        Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x8080808080808080ULL;
-        Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x0101010101010101ULL;
+        Bitboard left_captures = (pawns << 7) & opponent_pieces & ~0x0101010101010101ULL;
+        Bitboard right_captures = (pawns << 9) & opponent_pieces & ~0x8080808080808080ULL;
         for (int i = 0; i < 64; ++i) {
             if ((left_captures >> i) & 1) {
                  if (i / 8 == 7) { // Promotion
@@ -238,8 +238,8 @@ namespace MoveGen {
             }
         }
     } else { // Black
-        Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x8080808080808080ULL;
-        Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x0101010101010101ULL;
+        Bitboard left_captures = (pawns >> 9) & opponent_pieces & ~0x0101010101010101ULL;
+        Bitboard right_captures = (pawns >> 7) & opponent_pieces & ~0x8080808080808080ULL;
         for (int i = 0; i < 64; ++i) {
             if ((left_captures >> i) & 1) {
                 if (i / 8 == 0) { // Promotion

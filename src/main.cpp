@@ -1,7 +1,7 @@
-#include "../include/Engine.h"
+#include "Engine.h"
 
 int main() {
-    Engine engine;
-    engine.run();
+    Engine uciEngine;
+    uciEngine.run();
     return 0;
 }
