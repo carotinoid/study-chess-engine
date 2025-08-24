@@ -3,7 +3,7 @@
 # Compiler and flags
 CXX = g++
 # Add -Iinclude to tell the compiler where to find header files
-CXXFLAGS = -std=c++17 -Wall -O2 -Iinclude
+CXXFLAGS = -std=c++17 -Wall -O3 -Iinclude
 LDFLAGS = -pthread
 
 # Target executable name

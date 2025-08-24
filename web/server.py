@@ -47,11 +47,11 @@ def send_uci_command(command):
         engine_process.stdin.write(command + '\n')
         engine_process.stdin.flush()
 
-def get_engine_response(stop_token):
+def get_engine_response(stop_token, timeout=60):
     lines = []
     while True:
         try:
-            line = engine_queue.get(timeout=60) # Wait for 10 seconds
+            line = engine_queue.get(timeout=timeout) # Use the provided timeout
             print(f"Received from engine: {line}", flush=True)
             lines.append(line)
             if stop_token in line:
@@ -75,13 +75,18 @@ def new_game():
 def make_move():
     fen = request.json['fen']
     depth = request.json.get('depth', 5) # Get depth, default to 5
+    timeout = int(request.json.get('timeout', 60)) # Get timeout, default to 60
 
     # Send position to engine
     send_uci_command(f"position fen {fen}")
+    
+    # Make sure engine is ready
+    send_uci_command("isready")
+    get_engine_response("readyok", timeout=timeout)
 
     # Ask engine to find best move
     send_uci_command(f"go depth {depth}")
-    response_lines = get_engine_response("bestmove")
+    response_lines = get_engine_response("bestmove", timeout=timeout)
     
     best_move_str = ""
     for line in response_lines:

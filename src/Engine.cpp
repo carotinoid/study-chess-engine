@@ -72,12 +72,19 @@ void Engine::handlePosition(const std::string& line) {
             fen += token + (i == 5 ? "" : " ");
         }
         game = Game(fen); // Create a new game with the FEN
+    } else if (token == "moves") {
+        while (iss >> token) {
+            Move move = parseMove(token, game);
+            std::cout << move << std::endl;
+            game.makeMove(move);
+        }
     }
 
     iss >> token;
     if (token == "moves") {
         while (iss >> token) {
             Move move = parseMove(token, game);
+            std::cout << move << std::endl;
             game.makeMove(move);
         }
     }

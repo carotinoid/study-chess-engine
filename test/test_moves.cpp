@@ -101,6 +101,7 @@ void run_test_rook_move();
 void run_test_queen_moves();
 void run_test_queen_moves_2();
 void run_test_scholar_mate();
+void run_test_t1();
 
 void run_move_tests() {
     Zobrist::Init();
@@ -115,6 +116,7 @@ void run_move_tests() {
     run_test_queen_moves();
     run_test_queen_moves_2();
     run_test_scholar_mate();
+    run_test_t1();
     std::cout << "--- MoveGen tests passed! ---" << std::endl;
 }
 
@@ -226,4 +228,9 @@ TEST_CASE(test_scholar_mate) {
         expected_queen_moves = {"f3a3", "f3b3", "f3c3", "f3d3", "f3e3", "f3g3", "f3h3", "f3e2", "f3d1", "f3g4", "f3h5", "f3f4", "f3f5", "f3f6", "f3f7"};
     ASSERT_TRUE(compareMoves(bishop_c4_moves, expected_bishop_moves, "Bishop Moves from c4"));
     ASSERT_TRUE(compareMoves(queen_f3_moves, expected_queen_moves, "Queen Moves from f3"));
+}
+
+TEST_CASE(test_t1) {
+    SETUP("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 1");
+    ASSERT_EQ(all_moves.size(), (size_t)20);
 }

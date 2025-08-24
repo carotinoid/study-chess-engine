@@ -13,7 +13,10 @@
             <p>Status: <span id="status"></span></p>
             <p>FEN: <span id="fen"></span></p>
             <p>Engine Status: <span id="engine-status">Ready</span></p>
-            <div>Timeout: 60s</div>
+            <div id="timeout-selection">
+                <label for="timeout">Timeout (s):</label>
+                <input type="number" id="timeout" name="timeout" min="1" max="300" value="60">
+            </div>
             <div class="pgn-container">
                 <label>PGN:</label>
                 <button id="copyPgnBtn">Copy</button>

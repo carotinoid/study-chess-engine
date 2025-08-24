@@ -106,6 +106,7 @@ $(document).ready(function() {
         }
 
         var depth = $('#depth').val();
+        var timeout = $('#timeout').val();
         $('#engine-status').html('Thinking...');
 
         // make AJAX call to server for engine's move
@@ -113,7 +114,7 @@ $(document).ready(function() {
             url: 'make_move',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ fen: game.fen(), depth: depth }),
+            data: JSON.stringify({ fen: game.fen(), depth: depth, timeout: timeout }),
             success: function(response) {
                 console.log("Received response from server:", response);
                 if (response.best_move) {
@@ -152,9 +153,22 @@ $(document).ready(function() {
         board.start();
         updateStatus();
 
-        if (game.turn() !== playerColor) {
-            window.setTimeout(getEngineMove, 250);
-        }
+        // Notify the server that a new game has started
+        $.ajax({
+            url: 'new_game',
+            method: 'POST',
+            contentType: 'application/json',
+            success: function(response) {
+                console.log("New game started on server");
+                // If it's engine's turn to move first, get the move
+                if (game.turn() !== playerColor) {
+                    window.setTimeout(getEngineMove, 250);
+                }
+            },
+            error: function() {
+                alert("Error: Could not start a new game on the server.");
+            }
+        });
     }
 
     function loadFen() {
