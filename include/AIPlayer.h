@@ -15,6 +15,7 @@ class AIPlayer {
 public:
     AIPlayer(); // Constructor
     Move findBestMove(Game& game, int depth);
+    void setUseOpeningBook(bool useBook);
 
     // --- Evaluation Weights ---
     // These are public so they can be accessed by helper functions.
@@ -42,13 +43,31 @@ public:
     static const int ROOK_ON_SEMI_OPEN_FILE_BONUS = 25;
 
     static const int MATE_SCORE = 32000;
+    static const int MAX_PLY = 64;
 
 private:
     std::unique_ptr<OpeningBook> openingBook;
     std::unique_ptr<TranspositionTable> transpositionTable;
-    int minimax(Game& game, int depth, bool maximizingPlayer, int alpha, int beta);
+    bool useOpeningBook = true;
+
+    std::array<std::array<Move, 2>, MAX_PLY> killerMoves;
+    std::array<std::array<int, 64>, 64> historyScores;
+
+    void clearKillerMoves();
+    void clearHistoryScores();
+
+    int minimax(Game& game, int depth, int ply, bool maximizingPlayer, int alpha, int beta);
     int quiescenceSearch(Game& game, int alpha, int beta);
     int evaluate(const BoardState& boardState);
+
+    // --- Evaluation Components ---
+    int calculateGamePhase(const BoardState& boardState) const;
+    int evaluateMaterial(const BoardState& boardState) const;
+    int evaluatePositional(const BoardState& boardState, int gamePhase) const;
+    int evaluateMobility(const BoardState& boardState) const;
+    int evaluateKingSafety(const BoardState& boardState) const;
+    int evaluatePawnStructure(const BoardState& boardState) const;
+    int evaluateStrategic(const BoardState& boardState) const; // Covers various strategic aspects
 
     // Piece-Square Tables (inline static for C++17)
     inline static const std::array<int, 64> pawn_pst = {

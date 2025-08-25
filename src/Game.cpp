@@ -54,6 +54,11 @@ bool Game::makeMove(const Move& move) {
     return true;
 }
 
+void Game::makeNullMove() {
+    board.makeNullMove();
+    updateStatus();
+}
+
 void Game::updateStatus() {
     std::vector<Move> legalMoves = generateAllLegalMoves();
 

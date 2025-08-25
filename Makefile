@@ -37,7 +37,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 
 # Clean up build files
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET) *.o test_runner
+	rm -rf $(BUILD_DIR) $(TARGET) *.o test_runner bench_runner
 
 # Phony targets
 .PHONY: all clean
@@ -76,3 +76,30 @@ $(TEST_BUILD_DIR)/%.o: $(TEST_SRC_DIR)/%.cpp | $(TEST_BUILD_DIR)
 
 # Add test target to phony
 .PHONY: all clean test
+
+# --- Benchmark ---
+BENCH_SRC_DIR = app
+BENCH_BUILD_DIR = build/app
+BENCH_TARGET = bench_runner
+
+BENCH_SRCS = $(BENCH_SRC_DIR)/bench.cpp
+
+BENCH_OBJS = $(patsubst $(BENCH_SRC_DIR)/%.cpp,$(BENCH_BUILD_DIR)/%.o,$(BENCH_SRCS))
+
+# Dependencies for the benchmark (all engine code except main.cpp and Engine.cpp)
+BENCH_DEPS_SRCS = $(filter-out $(SRC_DIR)/main.cpp $(SRC_DIR)/Engine.cpp, $(SRCS))
+BENCH_DEPS_OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(BENCH_DEPS_SRCS))
+
+bench: $(BENCH_TARGET)
+	@./$(BENCH_TARGET)
+
+$(BENCH_TARGET): $(BENCH_OBJS) $(BENCH_DEPS_OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(BENCH_TARGET) $^
+
+$(BENCH_BUILD_DIR):
+	mkdir -p $(BENCH_BUILD_DIR)
+
+$(BENCH_BUILD_DIR)/%.o: $(BENCH_SRC_DIR)/%.cpp | $(BENCH_BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -Iinclude -c $< -o $@
+
+.PHONY: all clean test bench

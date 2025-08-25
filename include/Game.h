@@ -17,6 +17,7 @@ public:
 
     std::vector<Move> getLegalMovesForPieceAt(Square s) const;
     bool makeMove(const Move& move);
+    void makeNullMove();
     std::vector<Move> generateAllLegalMoves() const;
 
 private:

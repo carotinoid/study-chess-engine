@@ -130,7 +130,7 @@ void Engine::searchBestMove(int depth) {
     searching = true;
     Move bestMove = ai.findBestMove(game, depth);
     if (searching) { // Check if stop was called
-        std::cout << "bestmove " << moveToString(bestMove) << std::endl;
+        std::cout << "bestmove " << bestMove.toString() << std::endl;
     }
     searching = false;
 }
@@ -170,22 +170,4 @@ Move Engine::parseMove(const std::string& moveString, const Game& game) {
     }
 
     return m; // Should be a legal move
-}
-
-std::string Engine::moveToString(const Move& move) {
-    std::string str;
-    str += (char)('a' + move.start.file);
-    str += (char)('1' + move.start.rank);
-    str += (char)('a' + move.end.file);
-    str += (char)('1' + move.end.rank);
-    if (move.promotionPiece) {
-        switch (*move.promotionPiece) {
-            case PieceType::QUEEN: str += 'q'; break;
-            case PieceType::ROOK: str += 'r'; break;
-            case PieceType::BISHOP: str += 'b'; break;
-            case PieceType::KNIGHT: str += 'n'; break;
-            default: break;
-        }
-    }
-    return str;
 }

@@ -286,6 +286,24 @@ void BitboardRepresentation::makeMove(const Move& move) {
     currentState.zobristKey = hash;
 }
 
+void BitboardRepresentation::makeNullMove() {
+    // --- Zobrist Update: Remove old state ---
+    uint64_t hash = currentState.zobristKey;
+    hash ^= Zobrist::blackToMoveKey; // Always switch side to move
+    if (currentState.enPassantTarget) {
+        hash ^= Zobrist::enPassantKeys[currentState.enPassantTarget->file];
+    }
+
+    // --- Update Game State ---
+    currentState.currentTurn = (currentState.currentTurn == Color::WHITE) ? Color::BLACK : Color::WHITE;
+    currentState.enPassantTarget = std::nullopt;
+    currentState.halfmoveClock++; // A null move is a half-move
+
+    // --- Zobrist Update: Add new state ---
+    // No new en passant target, so no key to add
+    currentState.zobristKey = hash;
+}
+
 std::string BitboardRepresentation::toFen() const {
     std::stringstream fen;
     for (int rank = 7; rank >= 0; --rank) {

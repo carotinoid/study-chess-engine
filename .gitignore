@@ -3,6 +3,7 @@ build/
 *.o
 chessai
 test_runner
+bench_runner
 
 # Submodule directory
 eco.json

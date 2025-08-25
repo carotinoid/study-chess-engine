@@ -22,25 +22,6 @@ namespace {
         if (state.king[0] & mask || state.king[1] & mask) return PieceType::KING;
         return std::nullopt;
     }
-
-    Square squareFromString(const std::string& str) {
-        if (str.length() < 2) return {-1, -1};
-        int file = str[0] - 'a';
-        int rank = str[1] - '1';
-        return {rank, file};
-    }
-
-    std::optional<PieceType> pieceTypeFromChar(char c) {
-        switch (toupper(c)) {
-            case 'N': return PieceType::KNIGHT;
-            case 'B': return PieceType::BISHOP;
-            case 'R': return PieceType::ROOK;
-            case 'Q': return PieceType::QUEEN;
-            case 'K': return PieceType::KING;
-            case 'P': return PieceType::PAWN;
-            default: return std::nullopt;
-        }
-    }
 }
 
 OpeningBook::OpeningBook(const std::string& ecoFile) : bookFile(ecoFile) {}
