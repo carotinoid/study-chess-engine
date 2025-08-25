@@ -13,3 +13,5 @@ eco.json
 tmp
 note
 *backup
+
+.vscode/

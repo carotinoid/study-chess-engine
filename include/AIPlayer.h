@@ -58,7 +58,7 @@ private:
 
     int minimax(Game& game, int depth, int ply, bool maximizingPlayer, int alpha, int beta);
     int quiescenceSearch(Game& game, int alpha, int beta);
-    int evaluate(const BoardState& boardState);
+    int evaluate(const BoardState& boardState, const GameStatus& status);
 
     // --- Evaluation Components ---
     int calculateGamePhase(const BoardState& boardState) const;

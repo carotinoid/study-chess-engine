@@ -259,10 +259,16 @@ int AIPlayer::evaluateStrategic(const BoardState& boardState) const {
     return strategic_score;
 }
 
-
-int AIPlayer::evaluate(const BoardState& boardState) {
+#include "Game.h"
+int AIPlayer::evaluate(const BoardState& boardState, const GameStatus& status) {
     int score = 0;
     int gamePhase = calculateGamePhase(boardState);
+
+    if (status == GameStatus::CHECKMATE) {
+        return (boardState.currentTurn == Color::WHITE) ? -MATE_SCORE : MATE_SCORE;
+    } else if (status == GameStatus::STALEMATE || status == GameStatus::DRAW) {
+        return 0;
+    }
 
     score += evaluateMaterial(boardState);
     score += evaluatePositional(boardState, gamePhase) * PST_WEIGHT;
@@ -275,7 +281,7 @@ int AIPlayer::evaluate(const BoardState& boardState) {
 }
 
 int AIPlayer::quiescenceSearch(Game& game, int alpha, int beta) {
-    int stand_pat = evaluate(game.getBoard().getState());
+    int stand_pat = evaluate(game.getBoard().getState(), game.getStatus());
     bool isMaximizingPlayer = (game.getBoard().getState().currentTurn == Color::WHITE);
 
     if (isMaximizingPlayer) {
