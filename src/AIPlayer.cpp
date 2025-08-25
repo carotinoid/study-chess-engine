@@ -325,7 +325,7 @@ int AIPlayer::quiescenceSearch(Game& game, int alpha, int beta) {
 int AIPlayer::minimax(Game& game, int depth, int ply, bool maximizingPlayer, int alpha, int beta) {
     if (game.getStatus() != GameStatus::ONGOING) {
         if (game.getStatus() == GameStatus::CHECKMATE) {
-            return maximizingPlayer ? -MATE_SCORE : MATE_SCORE;
+            return maximizingPlayer ? (-MATE_SCORE + ply) : (MATE_SCORE - ply);
         } else { // Stalemate or Draw
             return 0;
         }

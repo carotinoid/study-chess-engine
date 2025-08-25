@@ -10,6 +10,7 @@ eco.json
 .venv
 
 .env
+*.log
 tmp
 note
 *backup

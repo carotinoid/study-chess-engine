@@ -15,16 +15,16 @@ void run_opening_tests() {
 }
 
 void printBoardStateForHashing(const BoardState& state) {
-    std::cerr << "Turn: " << (state.currentTurn == Color::WHITE ? "White" : "Black") << std::endl;
-    std::cerr << "Castling: " 
+    std::cout << "Turn: " << (state.currentTurn == Color::WHITE ? "White" : "Black") << std::endl;
+    std::cout << "Castling: " 
               << (state.castleRights.whiteKingSide ? "K" : "") 
               << (state.castleRights.whiteQueenSide ? "Q" : "")
               << (state.castleRights.blackKingSide ? "k" : "")
               << (state.castleRights.blackQueenSide ? "q" : "")
               << std::endl;
-    std::cerr << "En Passant: " << (state.enPassantTarget.has_value() ? state.enPassantTarget.value().toString() : "-") << std::endl;
-    std::cerr << "Zobrist Key: " << state.zobristKey << std::endl;
-    std::cerr << "-------------------------" << std::endl;
+    std::cout << "En Passant: " << (state.enPassantTarget.has_value() ? state.enPassantTarget.value().toString() : "-") << std::endl;
+    std::cout << "Zobrist Key: " << state.zobristKey << std::endl;
+    std::cout << "-------------------------" << std::endl;
 }
 
 Move findMove(Game& game, const std::string& moveStr) {
@@ -39,27 +39,27 @@ Move findMove(Game& game, const std::string& moveStr) {
 
 TEST_CASE(OpeningZobristHashGeneration) {
     Game game;
-    std::cerr << "\n--- Initial Position ---" << std::endl;
+    std::cout << "\n--- Initial Position ---" << std::endl;
     printBoardStateForHashing(game.getBoard().getState());
 
     // 1. e2e4
     Move move1 = findMove(game, "e2e4");
     ASSERT_TRUE(move1.start.isValid());
     game.makeMove(move1);
-    std::cerr << "\n--- After e2e4 ---" << std::endl;
+    std::cout << "\n--- After e2e4 ---" << std::endl;
     printBoardStateForHashing(game.getBoard().getState());
 
     // 2. b8c6
     Move move2 = findMove(game, "b8c6");
     ASSERT_TRUE(move2.start.isValid());
     game.makeMove(move2);
-    std::cerr << "\n--- After b8c6 ---" << std::endl;
+    std::cout << "\n--- After b8c6 ---" << std::endl;
     printBoardStateForHashing(game.getBoard().getState());
 
     // 3. g1f3
     Move move3 = findMove(game, "g1f3");
     ASSERT_TRUE(move3.start.isValid());
     game.makeMove(move3);
-    std::cerr << "\n--- After g1f3 ---" << std::endl;
+    std::cout << "\n--- After g1f3 ---" << std::endl;
     printBoardStateForHashing(game.getBoard().getState());
 }
