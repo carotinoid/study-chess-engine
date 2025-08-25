@@ -102,6 +102,7 @@ void run_test_queen_moves();
 void run_test_queen_moves_2();
 void run_test_scholar_mate();
 void run_test_t1();
+void run_test_t2();
 
 void run_move_tests() {
     Zobrist::Init();
@@ -117,6 +118,7 @@ void run_move_tests() {
     run_test_queen_moves_2();
     run_test_scholar_mate();
     run_test_t1();
+    run_test_t2();
     std::cout << "--- MoveGen tests passed! ---" << std::endl;
 }
 
@@ -233,4 +235,33 @@ TEST_CASE(test_scholar_mate) {
 TEST_CASE(test_t1) {
     SETUP("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 1");
     ASSERT_EQ(all_moves.size(), (size_t)20);
+}
+
+TEST_CASE(test_t2) {
+    SETUP("2b2k1r/P4ppp/2n5/3q4/1b6/4Q1B1/3p1PPP/3R2K1 b - - 0 33");
+    /*
+    from: h8, to: g8
+    from: f8, to: e8, g8, e7
+    from: h7, to: h6, h5
+    from: g7, to: g6, g5
+    from: f7, to: f6, f5
+    from: c8, to: b7, a6, d7, e6, f5, g4, h3
+    from: c6, to: b8, d8, a7, e7, a5, e5, d4
+    from: b4, to: a3, a5, c3, c5, d6, e7
+    from: d5: to: c5, b5, a5, e5, f5, g5, h5, d8, d7, d6, d4, d3, e6, c4, b3, a2, e4, f3, g2, 
+    */
+    std::set<std::string> expected_all_moves = {
+        "h8g8",
+        "f8e8", "f8g8", "f8e7",
+        "h7h6", "h7h5",
+        "g7g6", "g7g5",
+        "f7f6", "f7f5",
+        "c8b7", "c8a6", "c8d7", "c8e6", "c8f5", "c8g4", "c8h3",
+        "c6b8", "c6d8", "c6a7", "c6e7", "c6a5", "c6e5", "c6d4",
+        "b4a3", "b4a5", "b4c3", "b4c5", "b4d6", "b4e7",
+        "d5c5", "d5b5", "d5a5", "d5e5", "d5f5", "d5g5", "d5h5",
+        "d5d8", "d5d7", "d5d6", "d5d4", "d5d3",
+        "d5e6", "d5c4", "d5b3", "d5a2", "d5e4", "d5f3", "d5g2"
+    };
+    ASSERT_TRUE(compareMoves(all_moves, expected_all_moves, "All Moves in test_t2"));
 }
